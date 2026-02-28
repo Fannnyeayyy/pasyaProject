@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "CRUD User Management - React + Vite + Tailwind + Express + SQLite",
   "scripts": {
+    "start": "node server.js",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "node server/server.js",
     "client": "cd client && npm run dev",
@@ -11,11 +12,11 @@
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^12.6.2",
     "concurrently": "^8.2.2",
     "cors": "^2.8.5",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.2",
-    "sql.js": "^1.10.3",
     "xlsx": "^0.18.5",
     "xlx": "^1.0.0"
   }
