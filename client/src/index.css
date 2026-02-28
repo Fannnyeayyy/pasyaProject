@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body { @apply font-sans; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #2e2e38; border-radius: 3px; }
+}
+
+@layer components {
+  .input-field {
+    @apply w-full px-4 py-3 bg-dark-900 border border-dark-400 rounded-lg text-gray-100 text-sm
+      outline-none transition-all duration-200
+      focus:border-accent focus:ring-2 focus:ring-accent-glow
+      placeholder:text-gray-600;
+  }
+  .input-field.error {
+    @apply border-red-500 focus:ring-red-500/20;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium
+      transition-all duration-200 cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply bg-accent text-white hover:bg-accent-hover hover:shadow-lg hover:shadow-accent-glow hover:-translate-y-0.5;
+  }
+  .btn-ghost {
+    @apply bg-transparent text-gray-400 border border-dark-400 hover:bg-dark-600 hover:text-gray-200;
+  }
+  .btn-danger {
+    @apply bg-transparent text-red-400 hover:bg-red-500/10;
+  }
+  .btn-sm {
+    @apply px-3 py-2 text-xs;
+  }
+  .sidebar-link {
+    @apply flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-400
+      transition-all duration-200 hover:bg-dark-600 hover:text-gray-200;
+  }
+  .sidebar-link.active {
+    @apply bg-accent/10 text-accent border border-accent/20;
+  }
+  .stat-card {
+    @apply bg-dark-700 border border-dark-400 rounded-xl p-5
+      hover:border-accent/30 hover:-translate-y-0.5 transition-all duration-200;
+  }
+}
