@@ -13,7 +13,7 @@ function ProtectedLayout({ admin, onLogout, children }) {
     <div className="min-h-screen bg-dark-900">
       <Sidebar admin={admin} onLogout={onLogout} />
       <main className="ml-64 p-8 min-h-screen">
-        <div className="max-w-[1100px]">{children}</div>
+        <div className="w-full">{children}</div>
       </main>
     </div>
   );
