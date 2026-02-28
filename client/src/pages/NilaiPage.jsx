@@ -4,7 +4,6 @@ import { getNilaiList, getUsers, createNilai, updateNilai, deleteNilai } from ".
 import Modal from "../components/Modal";
 import Toast from "../components/Toast";
 
-// Grade helper
 function getGrade(nilai) {
   if (nilai >= 85) return { letter: "A", color: "text-emerald-400 bg-emerald-500/10" };
   if (nilai >= 70) return { letter: "B", color: "text-blue-400 bg-blue-500/10" };
@@ -13,10 +12,13 @@ function getGrade(nilai) {
   return { letter: "E", color: "text-red-400 bg-red-500/10" };
 }
 
+const PERTEMUAN_OPTIONS = Array.from({ length: 16 }, (_, i) => i + 1);
+
 export default function NilaiPage() {
   const [nilaiList, setNilaiList] = useState([]);
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
+  const [filterPertemuan, setFilterPertemuan] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [editData, setEditData] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -27,9 +29,17 @@ export default function NilaiPage() {
     setToasts((prev) => [...prev, { id, message, type }]);
   };
 
-  const fetchNilai = useCallback(async (q = "") => {
+  const fetchNilai = useCallback(async (q = "", pertemuan = "") => {
     try {
-      setNilaiList(await getNilaiList(q));
+      const params = new URLSearchParams();
+      if (q) params.append("search", q);
+      if (pertemuan) params.append("pertemuan", pertemuan);
+      const query = params.toString();
+      const res = await fetch(`/api/nilai${query ? `?${query}` : ""}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      const data = await res.json();
+      setNilaiList(data);
     } catch {
       addToast("Gagal memuat data nilai", "error");
     }
@@ -37,16 +47,19 @@ export default function NilaiPage() {
 
   const fetchUsers = async () => {
     try {
-      setUsers(await getUsers());
+      const res = await fetch("/api/users", {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      setUsers(await res.json());
     } catch {}
   };
 
   useEffect(() => { fetchNilai(); fetchUsers(); }, [fetchNilai]);
 
   useEffect(() => {
-    const t = setTimeout(() => fetchNilai(search), 300);
+    const t = setTimeout(() => fetchNilai(search, filterPertemuan), 300);
     return () => clearTimeout(t);
-  }, [search, fetchNilai]);
+  }, [search, filterPertemuan, fetchNilai]);
 
   const handleFormSubmit = async (data) => {
     if (editData) {
@@ -56,21 +69,21 @@ export default function NilaiPage() {
       await createNilai(data);
       addToast("Nilai berhasil ditambahkan");
     }
-    fetchNilai(search);
+    fetchNilai(search, filterPertemuan);
   };
 
   const handleConfirmDelete = async () => {
     await deleteNilai(deleteTarget.id);
     setDeleteTarget(null);
     addToast("Nilai berhasil dihapus");
-    fetchNilai(search);
+    fetchNilai(search, filterPertemuan);
   };
 
   return (
     <div>
       <div className="mb-8">
         <h1 className="text-2xl font-bold tracking-tight mb-1">Kelola Nilai</h1>
-        <p className="text-gray-500 text-sm">Tambah, edit, dan hapus nilai mahasiswa</p>
+        <p className="text-gray-500 text-sm">Tambah, edit, dan hapus nilai mahasiswa per pertemuan</p>
       </div>
 
       {/* Toolbar */}
@@ -80,6 +93,19 @@ export default function NilaiPage() {
           <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
             className="input-field pl-10" placeholder="Cari NIM, nama, atau notes..." />
         </div>
+
+        {/* Filter Pertemuan */}
+        <select
+          value={filterPertemuan}
+          onChange={(e) => setFilterPertemuan(e.target.value)}
+          className="input-field w-auto min-w-[160px] cursor-pointer"
+        >
+          <option value="">Semua Pertemuan</option>
+          {PERTEMUAN_OPTIONS.map((p) => (
+            <option key={p} value={p}>Pertemuan {p}</option>
+          ))}
+        </select>
+
         <button onClick={() => { setEditData(null); setFormOpen(true); }} className="btn btn-primary">
           <Plus className="w-4 h-4" /> Tambah Nilai
         </button>
@@ -90,7 +116,9 @@ export default function NilaiPage() {
         {nilaiList.length === 0 ? (
           <div className="py-16 text-center">
             <GraduationCap className="w-12 h-12 text-gray-600 mx-auto mb-4 opacity-50" />
-            <p className="text-gray-500 text-sm">Belum ada data nilai</p>
+            <p className="text-gray-500 text-sm">
+              {filterPertemuan ? `Belum ada nilai untuk pertemuan ${filterPertemuan}` : "Belum ada data nilai"}
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -100,6 +128,7 @@ export default function NilaiPage() {
                   <th className="px-5 py-3.5 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider border-b border-dark-400">No</th>
                   <th className="px-5 py-3.5 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider border-b border-dark-400">NIM</th>
                   <th className="px-5 py-3.5 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider border-b border-dark-400">Nama</th>
+                  <th className="px-5 py-3.5 text-center text-[11px] font-semibold text-gray-500 uppercase tracking-wider border-b border-dark-400">Pertemuan</th>
                   <th className="px-5 py-3.5 text-center text-[11px] font-semibold text-gray-500 uppercase tracking-wider border-b border-dark-400">Nilai</th>
                   <th className="px-5 py-3.5 text-center text-[11px] font-semibold text-gray-500 uppercase tracking-wider border-b border-dark-400">Grade</th>
                   <th className="px-5 py-3.5 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider border-b border-dark-400">Notes</th>
@@ -115,6 +144,11 @@ export default function NilaiPage() {
                       <td className="px-5 py-4 text-sm font-mono font-medium text-accent">{n.nim}</td>
                       <td className="px-5 py-4 text-sm font-medium text-gray-200">{n.nama}</td>
                       <td className="px-5 py-4 text-center">
+                        <span className="inline-block px-2.5 py-1 rounded-lg text-xs font-semibold bg-dark-600 text-gray-300 border border-dark-400">
+                          P-{n.pertemuan}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4 text-center">
                         <span className="text-sm font-mono font-semibold text-gray-100">{n.nilai}</span>
                       </td>
                       <td className="px-5 py-4 text-center">
@@ -122,7 +156,7 @@ export default function NilaiPage() {
                           {grade.letter}
                         </span>
                       </td>
-                      <td className="px-5 py-4 text-sm text-gray-400 max-w-[200px] truncate">
+                      <td className="px-5 py-4 text-sm text-gray-400 max-w-[180px] truncate">
                         {n.notes || <span className="text-gray-600">-</span>}
                       </td>
                       <td className="px-5 py-4">
@@ -168,6 +202,7 @@ export default function NilaiPage() {
 // === Nilai Form Modal ===
 function NilaiFormModal({ isOpen, onClose, onSubmit, editData, users, onError }) {
   const [userId, setUserId] = useState("");
+  const [pertemuan, setPertemuan] = useState("");
   const [nilai, setNilai] = useState("");
   const [notes, setNotes] = useState("");
   const [errors, setErrors] = useState({});
@@ -180,11 +215,13 @@ function NilaiFormModal({ isOpen, onClose, onSubmit, editData, users, onError })
     if (isOpen) {
       if (editData) {
         setUserId(editData.user_id);
+        setPertemuan(String(editData.pertemuan));
         setNilai(String(editData.nilai));
         setNotes(editData.notes || "");
         setUserSearch(`${editData.nim} - ${editData.nama}`);
       } else {
         setUserId("");
+        setPertemuan("");
         setNilai("");
         setNotes("");
         setUserSearch("");
@@ -194,7 +231,6 @@ function NilaiFormModal({ isOpen, onClose, onSubmit, editData, users, onError })
     }
   }, [isOpen, editData]);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClick = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -220,14 +256,15 @@ function NilaiFormModal({ isOpen, onClose, onSubmit, editData, users, onError })
   const handleSubmit = async (e) => {
     e.preventDefault();
     const errs = {};
-    if (!userId) errs.userId = "Pilih user terlebih dahulu";
-    if (nilai === "" || nilai === undefined) errs.nilai = "Nilai wajib diisi";
+    if (!userId) errs.userId = "Pilih mahasiswa terlebih dahulu";
+    if (!pertemuan) errs.pertemuan = "Pilih pertemuan";
+    if (nilai === "") errs.nilai = "Nilai wajib diisi";
     else if (isNaN(Number(nilai)) || Number(nilai) < 0 || Number(nilai) > 100) errs.nilai = "Nilai harus 0-100";
     if (Object.keys(errs).length) return setErrors(errs);
 
     setLoading(true);
     try {
-      await onSubmit({ user_id: userId, nilai: Number(nilai), notes: notes.trim() });
+      await onSubmit({ user_id: userId, pertemuan: Number(pertemuan), nilai: Number(nilai), notes: notes.trim() });
       onClose();
     } catch (err) {
       onError(err.message);
@@ -239,6 +276,7 @@ function NilaiFormModal({ isOpen, onClose, onSubmit, editData, users, onError })
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={editData ? "Edit Nilai" : "Tambah Nilai"}>
       <form onSubmit={handleSubmit}>
+
         {/* User Picker */}
         <div className="mb-5" ref={dropdownRef}>
           <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Mahasiswa</label>
@@ -265,6 +303,22 @@ function NilaiFormModal({ isOpen, onClose, onSubmit, editData, users, onError })
             )}
           </div>
           {errors.userId && <p className="text-red-400 text-xs mt-1.5">{errors.userId}</p>}
+        </div>
+
+        {/* Pertemuan Dropdown */}
+        <div className="mb-5">
+          <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Pertemuan</label>
+          <select
+            value={pertemuan}
+            onChange={(e) => { setPertemuan(e.target.value); setErrors((p) => ({ ...p, pertemuan: undefined })); }}
+            className={`input-field cursor-pointer ${errors.pertemuan ? "error" : ""}`}
+          >
+            <option value="">-- Pilih Pertemuan --</option>
+            {PERTEMUAN_OPTIONS.map((p) => (
+              <option key={p} value={p}>Pertemuan {p}</option>
+            ))}
+          </select>
+          {errors.pertemuan && <p className="text-red-400 text-xs mt-1.5">{errors.pertemuan}</p>}
         </div>
 
         {/* Nilai */}
@@ -306,7 +360,7 @@ function DeleteNilaiModal({ target, onClose, onConfirm, onError }) {
   return (
     <Modal isOpen={!!target} onClose={onClose} title="Hapus Nilai">
       <p className="text-gray-400 text-sm leading-relaxed mb-1">
-        Yakin ingin menghapus nilai <span className="text-gray-100 font-semibold">{target?.nilai}</span> milik{" "}
+        Yakin ingin menghapus nilai pertemuan <span className="text-gray-100 font-semibold">{target?.pertemuan}</span> milik{" "}
         <span className="text-gray-100 font-semibold">{target?.nama}</span>?
       </p>
       <p className="text-gray-500 text-xs mb-7">Tindakan ini tidak bisa dibatalkan.</p>
