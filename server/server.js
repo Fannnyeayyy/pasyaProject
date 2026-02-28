@@ -7,12 +7,16 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 const DB_PATH = path.join(__dirname, "database.db");
-const JWT_SECRET = "crud-app-secret-key-2026";
+const JWT_SECRET = process.env.JWT_SECRET || "crud-app-secret-key-2026";
+
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",")
+  : ["https://multiverse.com", "http://localhost:5173"];
 
 app.use(cors({
-  origin: ['https://mulltiverse.com', 'http://localhost:5173'],
+  origin: ALLOWED_ORIGINS,
   credentials: true
 }));
 app.use(express.json());

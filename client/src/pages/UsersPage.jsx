@@ -4,7 +4,7 @@ import { getUsers, createUser, updateUser, deleteUser } from "../api";
 import UserForm from "../components/UserForm";
 import DeleteConfirm from "../components/DeleteConfirm";
 import Toast from "../components/Toast";
-import * as XLSX from "https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs";
+import * as XLSX from "xlsx";
 
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
@@ -84,8 +84,6 @@ export default function UsersPage() {
   const handleImportExcel = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
-    // Reset input biar bisa upload file yang sama lagi
     e.target.value = "";
 
     setImporting(true);
@@ -100,7 +98,6 @@ export default function UsersPage() {
         return;
       }
 
-      // Cari kolom NIM dan Nama (fleksibel, case-insensitive)
       const keys = Object.keys(rows[0]);
       const nimKey = keys.find((k) => k.toLowerCase().includes("nim"));
       const namaKey = keys.find((k) =>
@@ -158,7 +155,6 @@ export default function UsersPage() {
             className="input-field pl-10" placeholder="Cari NIM atau nama..." />
         </div>
 
-        {/* Hidden file input */}
         <input ref={importRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleImportExcel} />
 
         <button onClick={() => importRef.current?.click()} disabled={importing} className="btn btn-ghost">
@@ -219,11 +215,9 @@ export default function UsersPage() {
         )}
       </div>
 
-      {/* Modals */}
       <UserForm isOpen={formOpen} onClose={() => setFormOpen(false)} onSubmit={handleFormSubmit} editUser={editUser} />
       <DeleteConfirm isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleConfirmDelete} user={deleteTarget} />
 
-      {/* Toasts */}
       <div className="fixed bottom-6 right-6 z-[200] flex flex-col gap-2">
         {toasts.map((t) => (
           <Toast key={t.id} message={t.message} type={t.type} onClose={() => setToasts((p) => p.filter((x) => x.id !== t.id))} />

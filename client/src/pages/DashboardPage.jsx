@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Users, UserPlus, ShieldCheck, Activity, TrendingUp } from "lucide-react";
+import { Users, UserPlus, ShieldCheck, Activity, TrendingUp, GraduationCap, BarChart2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { getDashboardStats } from "../api";
 
@@ -7,8 +7,14 @@ const actionColors = {
   LOGIN: "text-blue-400 bg-blue-500/10",
   REGISTER: "text-purple-400 bg-purple-500/10",
   CREATE: "text-emerald-400 bg-emerald-500/10",
+  CREATE_NILAI: "text-emerald-400 bg-emerald-500/10",
+  CREATE_ADMIN: "text-emerald-400 bg-emerald-500/10",
   UPDATE: "text-amber-400 bg-amber-500/10",
+  UPDATE_NILAI: "text-amber-400 bg-amber-500/10",
+  RESET_PW: "text-amber-400 bg-amber-500/10",
   DELETE: "text-red-400 bg-red-500/10",
+  DELETE_NILAI: "text-red-400 bg-red-500/10",
+  DELETE_ADMIN: "text-red-400 bg-red-500/10",
 };
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -46,6 +52,8 @@ export default function DashboardPage() {
     { label: "Total User", value: stats?.totalUsers || 0, icon: Users, color: "text-accent" },
     { label: "User Hari Ini", value: stats?.todayUsers || 0, icon: UserPlus, color: "text-emerald-400" },
     { label: "Total Admin", value: stats?.totalAdmins || 0, icon: ShieldCheck, color: "text-purple-400" },
+    { label: "Total Nilai", value: stats?.totalNilai || 0, icon: GraduationCap, color: "text-amber-400" },
+    { label: "Rata-rata Nilai", value: stats?.avgNilai || "0", icon: BarChart2, color: "text-pink-400" },
   ];
 
   const chartData = (stats?.chartData || []).map((d) => ({
@@ -61,7 +69,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         {statCards.map((s) => (
           <div key={s.label} className="stat-card">
             <div className="flex items-center justify-between mb-3">
@@ -110,7 +118,7 @@ export default function DashboardPage() {
               stats.recentActivity.map((a) => (
                 <div key={a.id} className="flex items-start gap-3">
                   <span className={`shrink-0 mt-0.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${actionColors[a.action] || "text-gray-400 bg-dark-500"}`}>
-                    {a.action}
+                    {a.action.replace("_", " ")}
                   </span>
                   <div className="min-w-0">
                     <p className="text-xs text-gray-300 truncate">{a.detail}</p>
