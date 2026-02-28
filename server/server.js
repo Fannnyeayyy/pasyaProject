@@ -16,8 +16,8 @@ const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
   : ["https://mulltiverse.com", "http://localhost:5173"];
 
 app.use(cors({
-  origin: ALLOWED_ORIGINS,
-  credentials: true
+  origin: "*",
+  credentials: false
 }));
 app.use(express.json());
 
