@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
-import { Search, Plus, Pencil, Trash2, Users as UsersIcon } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Search, Plus, Pencil, Trash2, Users as UsersIcon, FileDown, FileUp } from "lucide-react";
 import { getUsers, createUser, updateUser, deleteUser } from "../api";
 import UserForm from "../components/UserForm";
 import DeleteConfirm from "../components/DeleteConfirm";
 import Toast from "../components/Toast";
+import * as XLSX from "https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs";
 
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
@@ -12,6 +13,8 @@ export default function UsersPage() {
   const [editUser, setEditUser] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [toasts, setToasts] = useState([]);
+  const [importing, setImporting] = useState(false);
+  const importRef = useRef(null);
 
   const addToast = (message, type = "success") => {
     const id = Date.now();
@@ -51,6 +54,95 @@ export default function UsersPage() {
     fetchUsers(search);
   };
 
+  const handleExportExcel = () => {
+    if (users.length === 0) {
+      addToast("Tidak ada data untuk diexport", "warning");
+      return;
+    }
+
+    const exportData = users.map((u, i) => ({
+      No: i + 1,
+      NIM: u.nim,
+      "Nama Lengkap": u.nama,
+      "Tanggal Dibuat": u.created_at
+        ? new Date(u.created_at).toLocaleDateString("id-ID", {
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
+          })
+        : "-",
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    worksheet["!cols"] = [{ wch: 5 }, { wch: 18 }, { wch: 30 }, { wch: 22 }];
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Data User");
+    XLSX.writeFile(workbook, search ? `data-user-${search}.xlsx` : "data-user.xlsx");
+    addToast(`${users.length} data berhasil diexport`);
+  };
+
+  const handleImportExcel = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Reset input biar bisa upload file yang sama lagi
+    e.target.value = "";
+
+    setImporting(true);
+    try {
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer);
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet);
+
+      if (rows.length === 0) {
+        addToast("File Excel kosong", "error");
+        return;
+      }
+
+      // Cari kolom NIM dan Nama (fleksibel, case-insensitive)
+      const keys = Object.keys(rows[0]);
+      const nimKey = keys.find((k) => k.toLowerCase().includes("nim"));
+      const namaKey = keys.find((k) =>
+        k.toLowerCase().includes("nama") || k.toLowerCase().includes("name")
+      );
+
+      if (!nimKey || !namaKey) {
+        addToast("Kolom NIM atau Nama tidak ditemukan di file Excel", "error");
+        return;
+      }
+
+      let sukses = 0;
+      let gagal = 0;
+
+      for (const row of rows) {
+        const nim = String(row[nimKey] ?? "").trim();
+        const nama = String(row[namaKey] ?? "").trim();
+        if (!nim || !nama) { gagal++; continue; }
+        try {
+          await createUser({ nim, nama });
+          sukses++;
+        } catch {
+          gagal++;
+        }
+      }
+
+      fetchUsers(search);
+
+      if (sukses > 0 && gagal === 0) {
+        addToast(`${sukses} data berhasil diimport`);
+      } else if (sukses > 0 && gagal > 0) {
+        addToast(`${sukses} berhasil, ${gagal} gagal (NIM duplikat?)`, "warning");
+      } else {
+        addToast("Semua data gagal. Cek NIM duplikat atau format file.", "error");
+      }
+    } catch {
+      addToast("Gagal membaca file Excel", "error");
+    } finally {
+      setImporting(false);
+    }
+  };
+
   return (
     <div>
       <div className="mb-8">
@@ -65,6 +157,19 @@ export default function UsersPage() {
           <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
             className="input-field pl-10" placeholder="Cari NIM atau nama..." />
         </div>
+
+        {/* Hidden file input */}
+        <input ref={importRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleImportExcel} />
+
+        <button onClick={() => importRef.current?.click()} disabled={importing} className="btn btn-ghost">
+          <FileUp className="w-4 h-4" />
+          {importing ? "Mengimport..." : "Import Excel"}
+        </button>
+
+        <button onClick={handleExportExcel} className="btn btn-ghost">
+          <FileDown className="w-4 h-4" /> Export Excel
+        </button>
+
         <button onClick={() => { setEditUser(null); setFormOpen(true); }} className="btn btn-primary">
           <Plus className="w-4 h-4" /> Tambah User
         </button>
