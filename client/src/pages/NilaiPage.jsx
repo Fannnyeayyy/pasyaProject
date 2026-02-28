@@ -29,32 +29,24 @@ export default function NilaiPage() {
     setToasts((prev) => [...prev, { id, message, type }]);
   };
 
+  // FIXED: gunakan getNilaiList dari api.js, bukan raw fetch
   const fetchNilai = useCallback(async (q = "", pertemuan = "") => {
     try {
-      const params = new URLSearchParams();
-      if (q) params.append("search", q);
-      if (pertemuan) params.append("pertemuan", pertemuan);
-      const query = params.toString();
-      const res = await fetch(`/api/nilai${query ? `?${query}` : ""}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-      const data = await res.json();
+      const data = await getNilaiList(q, pertemuan);
       setNilaiList(data);
     } catch {
       addToast("Gagal memuat data nilai", "error");
     }
   }, []);
 
-  const fetchUsers = async () => {
+  // FIXED: gunakan getUsers dari api.js, bukan raw fetch
+  const fetchUsers = useCallback(async () => {
     try {
-      const res = await fetch("/api/users", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-      setUsers(await res.json());
+      setUsers(await getUsers());
     } catch {}
-  };
+  }, []);
 
-  useEffect(() => { fetchNilai(); fetchUsers(); }, [fetchNilai]);
+  useEffect(() => { fetchNilai(); fetchUsers(); }, [fetchNilai, fetchUsers]);
 
   useEffect(() => {
     const t = setTimeout(() => fetchNilai(search, filterPertemuan), 300);
